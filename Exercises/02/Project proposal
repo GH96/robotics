@@ -1,0 +1,18 @@
+Project proposal:
+
+What:
+play a game with a human:
+	human puts smth, robot puts smth on top (not fall)
+it must be in real-time, as less delays as possible
+
+if RL: how to demonstarate??
+
+How:
+Tracking changed pixels, find when no change (oject on the table) to start
+inverse kinematics, control - trajectory to reach
+OpenCV, with filtering based on color - to find the object
+
+React fast
+
+additional requirement: several objects, which can be put on top
+

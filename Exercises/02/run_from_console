@@ -1,0 +1,5 @@
+Run c++ opencv code from console:
+
+pkg-config --cflags --libs opencv
+g++ -ggdb openCV_ex.cpp -o openCV_ex `pkg-config --cflags --libs opencv`
+./openCV_ex 

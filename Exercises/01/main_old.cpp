@@ -39,7 +39,7 @@ void spline_use(){
   RobotOperation B(K);
   cout <<"joint positions: " <<B.getJointPositions() <<endl;
   cout <<"joint names: " <<B.getJointNames() <<endl;
-  B.move({q_zero,q_home}, {5.,10.}); // is it late?
+  B.move({q_zero,q_home}, {5.,10.});
   B.move({q_zero}, {15.}); //appends
   B.wait();
   rai::wait();
@@ -200,19 +200,16 @@ void grasp_use(){
   //B.move({q_zero}, {15.}); //appends
   //B.wait();
   //rai::wait();
-  //q = B.getJointPositions();
 
   arr q, W;
   uint n = K.getJointStateDimension();
   K.getJointState(q);
-  //cout<<"q is:"<<q<<"\n";
   double w = rai::getParameter("w", 1e-4);
   W.setDiag(w, n);  //W is equal the Id_n matrix times scalar w
 
   arr y_vec, J_vec;
   y_target = {.8, .0, 1.};
   double sum = .06, add = 0.;
-  double penalize_param = 100.;
 
   for(uint t=0; t<T; t++){
     Phi.clear(); 
@@ -221,12 +218,12 @@ void grasp_use(){
     // vector  // ex01 task2: align gripper
     // scalar prod zero btw R and B of hand and Z of object
     K.evalFeature(y_vec, J_vec, FS_scalarProductXZ, {"baxterL", "object"}); // <R,Z> = 0
-    Phi.append( y_vec/penalize_param ); // /10.
-    PhiJ.append( J_vec/penalize_param );
+    Phi.append( y_vec/T ); // /10.
+    PhiJ.append( -J_vec/T );
 
     K.evalFeature(y_vec, J_vec, FS_scalarProductZZ, {"baxterL", "object"}); // <B,Z> = 0
-    Phi.append( y_vec/penalize_param );
-    PhiJ.append( J_vec/penalize_param );
+    Phi.append( y_vec/T );
+    PhiJ.append( -J_vec/T );
     
     // position
     /*
@@ -236,15 +233,15 @@ void grasp_use(){
     PhiJ.append(J_left);
     */
     K.evalFeature(y_left, J_left, FS_positionDiff, {"baxterL", "object"});
-    Phi.append( y_left/penalize_param );
-    PhiJ.append( J_left/penalize_param );
+    Phi.append( y_left/T );
+    PhiJ.append( -J_left/T );
     // similar penalization very important ?
-    // why -Jacobian ?? -> q-=
+    // why -Jacobian ??
 
     //compute joint updates //ex01 task1: move arm towards obj
     //y_linear = y + (t/T)*(y_target - y);
     //q += 0.1*inverse(~J*J + W)*~J*(y_linear - y); 
-    q -= inverse(~PhiJ*PhiJ + W)*~PhiJ*Phi; // q∗ = q0 + J#*(y∗−y0) 2.30
+    q += inverse(~PhiJ*PhiJ + W)*~PhiJ*Phi; // q∗ = q0 + J#*(y∗−y0) 2.30
     //NOTATION: ~J is the transpose of J
     //TODO use linear motion interpolation, not just (y_target - y) !?
     
@@ -259,14 +256,9 @@ void grasp_use(){
     if (sum > add)
       q(-1) += .06/(t+10);
 
-    //B.move({q}, {4./T}); // not smooth in the loop
-    //B.wait();
+    B.move({q}, {4./T});
+    B.wait();
   }
-
-  arr q_target = q;
-
-  B.move({q}, {6.}); // this better outside the loop
-  B.wait();
 
   //K.setJointState(q);
   //B.move();
@@ -278,31 +270,7 @@ void grasp_use(){
   B.move({q}, {4.});
   B.wait();
 
-  // now move again to the home pos with object,                
-  B.move({q_home}, {6.}); // move to home
-  B.wait();
-
-  // now go back to table again and put the object
-  B.move({q}, {6.}); // use already calculated q
-  B.wait();
-  q(-1) = .06; //left gripper open to put
-  B.move({q}, {4.});
-  B.wait();
-
-  // open gripper for home and go there
-  q_home(-1) = .06; //left gripper open for home pos!
-  B.move({q_home}, {6.}); // move to home
-  B.wait();
-
-
-  // then open gripper
-  //q(-1) = .06; //left gripper close
-  //B.move({q}, {4.});
-  //B.wait();
-
   rai::wait();
-
-  //another loop for diff task with known target
 }
 
 
